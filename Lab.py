@@ -24,6 +24,9 @@ class Krug:
         distance = ((x - self._x) ** 2 + (y - self._y) ** 2) ** 0.5
         return distance <= self.radius
 
+    def print_removed(self):
+        print(f'Круг удалён! Координаты центра: x: {self._x}, y: {self._y}')
+
 class Storage:  # собственный объект-контейнер (внутри список, снаружи ведёт себя как список с курсором)
     def __init__(self):
         self._kontainer = []
@@ -50,10 +53,17 @@ class Storage:  # собственный объект-контейнер (вну
         for krug in self._kontainer:
             krug.is_selected = False
 
+    def remove_selected(self):
+        for krug in self._kontainer:
+            if krug.is_selected:
+                krug.print_removed()
+        self._kontainer = [krug for krug in self._kontainer if not krug.is_selected]
+
 class Holst(QWidget):
     def __init__(self):
         super().__init__()
         self.storage = Storage()
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
     def paintEvent(self, event):  # отрисовка всех кругов из контейнера
         painter = QPainter(self)
@@ -82,6 +92,16 @@ class Holst(QWidget):
                 self.storage.clear_selection()
                 self.storage.add_krug(Krug(x, y))
             self.update()
+
+    def keyPressEvent(self, event):  # Del удаляет выделенные круги
+        if event.key() == Qt.Key.Key_Delete:
+            self.storage.remove_selected()
+            self.update()
+
+    def resizeEvent(self, event):  # отладочный вывод при изменении размера
+        super().resizeEvent(event)
+        print(f'Размер формы изменен: {event.size().width()}x{event.size().height()}')
+        self.update()
 
 class Prilojenie(QMainWindow):  # само приложение
     def __init__(self):
