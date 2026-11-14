@@ -9,12 +9,20 @@ class Krug:
         self._x = x  # координаты центра круга
         self._y = y
         self.radius = Krug.radius
+        self.is_selected = False  # выделен ли круг
         print(f'Был создан круг по координатам x: {x}, y: {y}!')
 
     def draw_krug(self, painter):
-        painter.setPen(QColor(0, 255, 0))
+        if self.is_selected:
+            painter.setPen(QColor(85, 107, 47))  # выделенные красим в оливковый
+        else:
+            painter.setPen(QColor(0, 255, 0))  # по умолчанию лаймовый
         painter.drawEllipse(self._x - self.radius, self._y - self.radius,
                             self.radius * 2, self.radius * 2)
+
+    def contains(self, x, y):  # круг сам решает, попала ли в него точка
+        distance = ((x - self._x) ** 2 + (y - self._y) ** 2) ** 0.5
+        return distance <= self.radius
 
 class Storage:  # собственный объект-контейнер (внутри список, снаружи ведёт себя как список с курсором)
     def __init__(self):
@@ -38,6 +46,10 @@ class Storage:  # собственный объект-контейнер (вну
             return self._kontainer[self._tekush_index]
         return None
 
+    def clear_selection(self):
+        for krug in self._kontainer:
+            krug.is_selected = False
+
 class Holst(QWidget):
     def __init__(self):
         super().__init__()
@@ -50,9 +62,25 @@ class Holst(QWidget):
             self.storage.get_object().draw_krug(painter)
             self.storage.next()
 
-    def mousePressEvent(self, event):  # клик создаёт круг
+    def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            self.storage.add_krug(Krug(event.pos().x(), event.pos().y()))
+            x, y = event.pos().x(), event.pos().y()
+            clicked_on_circle = False
+            self.storage.first()
+            while not self.storage.end_of_list():
+                krug = self.storage.get_object()
+                if krug.contains(x, y):
+                    if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+                        krug.is_selected = not krug.is_selected  # Ctrl+клик: добавить/убрать из выделения
+                    else:
+                        self.storage.clear_selection()  # обычный клик: выделяем только этот круг
+                        krug.is_selected = True
+                    clicked_on_circle = True
+                    break
+                self.storage.next()
+            if not clicked_on_circle:  # клик по пустому месту: новый круг
+                self.storage.clear_selection()
+                self.storage.add_krug(Krug(x, y))
             self.update()
 
 class Prilojenie(QMainWindow):  # само приложение
