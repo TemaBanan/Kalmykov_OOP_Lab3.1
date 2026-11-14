@@ -38,9 +38,22 @@ class Storage:  # собственный объект-контейнер (вну
             return self._kontainer[self._tekush_index]
         return None
 
-class Holst(QWidget):  # холст, на котором будем рисовать круги
+class Holst(QWidget):
     def __init__(self):
         super().__init__()
+        self.storage = Storage()
+
+    def paintEvent(self, event):  # отрисовка всех кругов из контейнера
+        painter = QPainter(self)
+        self.storage.first()
+        while not self.storage.end_of_list():
+            self.storage.get_object().draw_krug(painter)
+            self.storage.next()
+
+    def mousePressEvent(self, event):  # клик создаёт круг
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.storage.add_krug(Krug(event.pos().x(), event.pos().y()))
+            self.update()
 
 class Prilojenie(QMainWindow):  # само приложение
     def __init__(self):
